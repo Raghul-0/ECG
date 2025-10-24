@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robust SVG Cat Animation</title>
+    
+    <style>
+        /* Basic styling for the page */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f7f8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        /* --- SVG Cat Container --- */
+        #catContainer {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 40px auto;
+        }
+
+        /* --- KEYFRAME ANIMATIONS (For continuous movement) --- */
+        @keyframes slowBlink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+        @keyframes tailWag { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(-5deg); } }
+        @keyframes breathing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+        @keyframes excitedJiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+
+        /* --- EMOTION STYLES --- */
+        
+        /* By default, hide all emotion-specific face groups */
+        .emotion-face {
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            pointer-events: none; /* Make hidden faces non-interactive */
+        }
+        
+        /* The main SVG container gets the class, which shows the correct face group */
+        #catSVG.happy .happy-face,
+        #catSVG.sad .sad-face,
+        #catSVG.angry .angry-face,
+        #catSVG.curious .curious-face,
+        #catSVG.playful .playful-face,
+        #catSVG.sleepy .sleepy-face,
+        #catSVG.scared .scared-face,
+        #catSVG.annoyed .annoyed-face,
+        #catSVG.lovestruck .lovestruck-face,
+        #catSVG.confused .confused-face {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Apply continuous animations based on the emotion class */
+        #catSVG.happy .tail,
+        #catSVG.playful .tail,
+        #catSVG.lovestruck .tail {
+            animation: tailWag 2.5s infinite ease-in-out;
+            transform-origin: 155px 125px;
+        }
+        #catSVG.happy .happy-face .eye,
+        #catSVG.curious .curious-face .eye {
+            animation: slowBlink 5s infinite;
+            transform-origin: center;
+        }
+        #catSVG.happy .base-body,
+        #catSVG.sleepy .base-body {
+            animation: breathing 4s infinite ease-in-out;
+        }
+        #catSVG.excited .base-body {
+            animation: excitedJiggle 0.5s infinite;
+        }
+
+        /* --- Styling for the control buttons --- */
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 600px; margin-top: 20px; }
+        .emotion-btn { padding: 10px 18px; font-size: 15px; font-weight: bold; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; }
+        .emotion-btn:hover { opacity: 0.85; }
+        .emotion-btn:active { transform: scale(0.95); }
+        
+        [data-emotion="happy"] { background-color: #2ecc71; }
+        [data-emotion="sad"] { background-color: #3498db; }
+        [data-emotion="angry"] { background-color: #e74c3c; }
+        [data-emotion="curious"] { background-color: #9b59b6; }
+        [data-emotion="playful"] { background-color: #f1c40f; }
+        [data-emotion="sleepy"] { background-color: #7f8c8d; }
+        [data-emotion="scared"] { background-color: #34495e; }
+        [data-emotion="annoyed"] { background-color: #d35400; }
+        [data-emotion="lovestruck"] { background-color: #e91e63; }
+        [data-emotion="confused"] { background-color: #1abc9c; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Reliable SVG Cat</h1>
+        <div id="catContainer">
+            <svg id="catSVG" class="happy" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <g class="base-body">
+                    <path class="tail" d="M 150 120 Q 180 100 190 150 C 195 180 170 195 160 180 Z" fill="#b37b42" stroke="#8c6135" stroke-width="2"/>
+                    <path class="head" d="M 30 100 C 30 40, 170 40, 170 100 C 170 160, 120 180, 100 175 C 80 180, 30 160, 30 100 Z" fill="#d99952" stroke="#8c6135" stroke-width="3"/>
+                    <path class="ear left" d="M 30 70 L 35 30 L 70 60 Z" fill="#d99952" stroke="#8c6135" stroke-width="3"/>
+                    <path class="ear right" d="M 170 70 L 165 30 L 130 60 Z" fill="#d99952" stroke="#8c6135" stroke-width="3"/>
+                </g>
+                
+                <g class="emotion-face happy-face" fill-rule="nonzero">
+                    <path d="M 70 90 C 70 82, 80 82, 80 90 C 80 98, 70 98, 70 90 Z" class="eye" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <path d="M 130 90 C 130 82, 120 82, 120 90 C 120 98, 130 98, 130 90 Z" class="eye" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="75" cy="90" r="3" fill="#2c3e50"/>
+                    <circle cx="125" cy="90" r="3" fill="#2c3e50"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M 85 135 Q 100 150 115 135" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                </g>
+
+                <g class="emotion-face sad-face">
+                    <path d="M60 95 C 65 85, 85 85, 90 95" fill="none" stroke="#2c3e50" stroke-width="2"/>
+                    <path d="M110 95 C 115 85, 135 85, 140 95" fill="none" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="75" cy="98" r="3" fill="#2c3e50"/>
+                    <circle cx="125" cy="98" r="3" fill="#2c3e50"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M 85 145 Q 100 130 115 145" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <path d="M 70 105 Q 75 115 80 105 Z" fill="#3498db"/>
+                </g>
+
+                <g class="emotion-face angry-face">
+                    <path d="M60,90 L90,85" stroke="#2c3e50" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M140,90 L110,85" stroke="#2c3e50" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M 85 145 Q 100 135 115 145" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                </g>
+
+                <g class="emotion-face curious-face">
+                    <circle cx="70" cy="90" r="15" class="eye" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="130" cy="90" r="15" class="eye" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="70" cy="93" r="7" fill="#2c3e50"/>
+                    <circle cx="130" cy="93" r="7" fill="#2c3e50"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <circle cx="100" cy="140" r="8" fill="#2c3e50"/>
+                </g>
+
+                <g class="emotion-face playful-face">
+                    <path d="M60 95 C 65 85, 85 85, 90 95" fill="none" stroke="#2c3e50" stroke-width="2"/>
+                    <path d="M115,90 L145,90" stroke="#2c3e50" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M 85 135 Q 100 150 115 135" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                    <path d="M95,140 Q100,150 105,140 Z" fill="#e74c3c"/>
+                </g>
+
+                <g class="emotion-face sleepy-face">
+                    <path d="M60,95 C 70,85 80,85 90,95" fill="none" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M110,95 C 120,85 130,85 140,95" fill="none" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <ellipse cx="100" cy="140" rx="15" ry="5" fill="#2c3e50"/>
+                </g>
+                
+                <g class="emotion-face scared-face">
+                    <circle cx="75" cy="90" r="18" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="125" cy="90" r="18" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="75" cy="90" r="5" fill="#2c3e50"/>
+                    <circle cx="125" cy="90" r="5" fill="#2c3e50"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <ellipse cx="100" cy="145" rx="20" ry="10" stroke="#2c3e50" stroke-width="2.5" fill="none"/>
+                </g>
+
+                <g class="emotion-face annoyed-face">
+                    <path d="M60,95 L90,95" stroke="#2c3e50" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M110 95 C 115 85, 135 85, 140 95" fill="none" stroke="#2c3e50" stroke-width="2"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M85,140 L115,145" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+
+                <g class="emotion-face lovestruck-face">
+                    <path d="M60,85 70,95 80,85 70,75 Z" fill="#e91e63" transform="rotate(-45 70 85)"/>
+                    <path d="M120,85 130,95 140,85 130,75 Z" fill="#e91e63" transform="rotate(-45 130 85)"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M 85 135 Q 100 145 115 135" stroke="#2c3e50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                </g>
+                
+                <g class="emotion-face confused-face">
+                    <path d="M60,85 C 65,95 85,95 90,85" fill="none" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="125" cy="90" r="15" fill="white" stroke="#2c3e50" stroke-width="2"/>
+                    <circle cx="75" cy="88" r="3" fill="#2c3e50"/>
+                    <circle cx="125" cy="93" r="7" fill="#2c3e50"/>
+                    <path d="M 100 115 L 90 130 Q 100 135 110 130 Z" fill="#ff9999" stroke="#e74c3c" stroke-width="1.5"/>
+                    <path d="M90,140 L110,140" stroke="#2c3e50" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+
+                <g stroke="#2c3e50" stroke-width="1.5" stroke-linecap="round">
+                    <line x1="40" y1="120" x2="10" y2="115"/> <line x1="45" y1="130" x2="15" y2="130"/> <line x1="40" y1="140" x2="10" y2="145"/>
+                    <line x1="160" y1="120" x2="190" y2="115"/> <line x1="155" y1="130" x2="185" y2="130"/> <line x1="160" y1="140" x2="190" y2="145"/>
+                </g>
+            </svg>
+        </div>
+
+        <div class="controls">
+            <button class="emotion-btn" data-emotion="happy">Happy</button>
+            <button class="emotion-btn" data-emotion="sad">Sad</button>
+            <button class="emotion-btn" data-emotion="angry">Angry</button>
+            <button class="emotion-btn" data-emotion="curious">Curious</button>
+            <button class="emotion-btn" data-emotion="playful">Playful</button>
+            <button class="emotion-btn" data-emotion="sleepy">Sleepy</button>
+            <button class="emotion-btn" data-emotion="scared">Scared</button>
+            <button class="emotion-btn" data-emotion="annoyed">Annoyed</button>
+            <button class="emotion-btn" data-emotion="lovestruck">Lovestruck</button>
+            <button class="emotion-btn" data-emotion="confused">Confused</button>
+        </div>
+    </div>
+
+    <script>
+        const catSVG = document.getElementById('catSVG');
+        const emotionButtons = document.querySelectorAll('.emotion-btn');
+        const allEmotions = ['happy', 'sad', 'angry', 'curious', 'playful', 'sleepy', 'scared', 'annoyed', 'lovestruck', 'confused'];
+
+        emotionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetEmotion = button.dataset.emotion;
+                allEmotions.forEach(emotion => catSVG.classList.remove(emotion));
+                catSVG.classList.add(targetEmotion);
+            });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Dataset - DO NOT UPLOAD
+Actor_*/
+audio_speech_actors_01-24/
+
+# Generated Files
+features/
+predictions.csv
+
+# Large Archives
+*.zip

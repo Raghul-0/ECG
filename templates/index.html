@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Emotion Detector</title>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+        :root {
+            --primary-color: #8e44ad; --primary-hover: #732d91; --light-bg: #f0f2f5;
+            --dark-text: #34495e; --light-text: #ffffff; --border-color: #dfe6e9;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); --success-color: #2ecc71;
+            --error-color: #e74c3c; --info-color: #3498db; --disabled-color: #bdc3c7;
+        }
+        body {
+            font-family: 'Poppins', sans-serif; background: var(--light-bg); display: flex;
+            justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+        }
+        .card {
+            background: var(--light-text); border-radius: 15px; box-shadow: var(--card-shadow);
+            padding: 30px 40px; text-align: center; width: 90%; max-width: 400px;
+        }
+        h1 { color: var(--dark-text); margin-bottom: 20px; font-weight: 600; }
+        lottie-player { width: 250px; height: 250px; margin: 0 auto; }
+        #result-text { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); margin-top: 20px; min-height: 1.5em; }
+        .controls { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+        .btn {
+            padding: 12px 25px; border: none; border-radius: 8px; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background-color 0.3s, transform 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-start { background-color: var(--success-color); color: var(--light-text); }
+        .btn-start:hover { background-color: #27ae60; }
+        .btn-stop { background-color: var(--error-color); color: var(--light-text); }
+        .btn-stop:hover { background-color: #c0392b; }
+        .btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
+        #status-message { margin-top: 15px; color: var(--info-color); font-weight: 400; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Real-Time Emotion Detector</h1>
+        <lottie-player id="lottie-player" autoplay loop src="/static/animations/neutral.json"></lottie-player>
+        <p id="result-text">Press Start to Begin</p>
+        <div class="controls">
+            <button id="start-btn" class="btn btn-start">Start Detection</button>
+            <button id="stop-btn" class="btn btn-stop" disabled>Stop Detection</button>
+        </div>
+        <p id="status-message">Waiting for microphone access...</p>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('start-btn');
+        const stopButton = document.getElementById('stop-btn');
+        const statusMessage = document.getElementById('status-message');
+        const resultText = document.getElementById('result-text');
+        const lottiePlayer = document.getElementById('lottie-player');
+
+        // Lottie animation mapping
+        const emotionAnimations = {
+            'happy': '/static/animations/happy.json',
+            'sad': '/static/animations/sad.json',
+            'angry': '/static/animations/angry.json',
+            'fearful': '/static/animations/fearful.json',
+            'disgust': '/static/animations/disgust.json',
+            'surprised': '/static/animations/surprised.json',
+            'neutral': '/static/animations/neutral.json',
+            'calm': '/static/animations/calm.json',
+        };
+
+        let socket;
+        let mediaStream;
+        let audioContext;
+        let scriptProcessor;
+
+        const SAMPLE_RATE = 16000; // Must match the backend
+        const BUFFER_SIZE = 4096; // A common buffer size
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', startDetection);
+        stopButton.addEventListener('click', stopDetection);
+
+        function startDetection() {
+            setLoadingState(true, 'Connecting to server...');
+
+            // 1. Initialize Socket.IO connection
+            socket = io();
+
+            socket.on('connect', () => {
+                console.log('Connected to server.');
+                statusMessage.textContent = 'Connection successful! Starting microphone...';
+                // 2. Access microphone
+                initMicrophone();
+            });
+            
+            socket.on('connect_error', (err) => {
+                console.error('Connection failed:', err);
+                displayStatus('Could not connect to the server.', 'error');
+                setLoadingState(false);
+            });
+
+            // 4. Listen for results from the server
+            socket.on('emotion_result', (data) => {
+                console.log('Received emotion:', data.emotion);
+                updateCharacter(data.emotion);
+            });
+        }
+
+        function stopDetection() {
+            setLoadingState(false, 'Detection stopped.');
+            
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+            if (socket) {
+                socket.disconnect();
+            }
+            updateCharacter('neutral');
+            resultText.textContent = 'Press Start to Begin';
+        }
+
+        async function initMicrophone() {
+            try {
+                // Get audio stream from microphone
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Create an AudioContext
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                const source = audioContext.createMediaStreamSource(mediaStream);
+
+                // Create a ScriptProcessorNode to process audio data
+                scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+                
+                scriptProcessor.onaudioprocess = (event) => {
+                    const inputData = event.inputBuffer.getChannelData(0);
+                    // 3. Stream the raw audio data to the server
+                    if (socket && socket.connected) {
+                         // The server expects 16-bit integers, so we convert from float32
+                        const int16Data = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            int16Data[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
+                        }
+                        socket.emit('audio_stream', int16Data.buffer);
+                    }
+                };
+
+                source.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                displayStatus('Microphone active. Listening...', 'success');
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                displayStatus('Could not access microphone. Please grant permission.', 'error');
+                stopDetection();
+            }
+        }
+
+        // --- UI Helper Functions ---
+        function updateCharacter(emotion) {
+            const animationPath = emotionAnimations[emotion] || emotionAnimations.neutral;
+            lottiePlayer.load(animationPath);
+            const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+            resultText.textContent = `Detected: ${emotionName}`;
+        }
+
+        function displayStatus(message, type = 'info') {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-${type}`;
+        }
+
+        function setLoadingState(isLoading, message = '') {
+            startButton.disabled = isLoading;
+            stopButton.disabled = !isLoading;
+            statusMessage.textContent = message;
+        }
+
+    </script>
+</body>
+</html>
