@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Emotion Detector</title>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <title>Speech Emotion Detector</title>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
@@ -12,20 +11,34 @@
             --primary-color: #8e44ad; --primary-hover: #732d91; --light-bg: #f0f2f5;
             --dark-text: #34495e; --light-text: #ffffff; --border-color: #dfe6e9;
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); --success-color: #2ecc71;
-            --error-color: #e74c3c; --info-color: #3498db; --disabled-color: #bdc3c7;
+            --error-color: #e74c3c; --info-color: #3498db; --warning-color: #f39c12; --disabled-color: #bdc3c7;
         }
         body {
             font-family: 'Poppins', sans-serif; background: var(--light-bg); display: flex;
-            justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+            flex-direction: column; /* Stack sections vertically */
+            justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
         }
         .card {
             background: var(--light-text); border-radius: 15px; box-shadow: var(--card-shadow);
-            padding: 30px 40px; text-align: center; width: 90%; max-width: 400px;
+            padding: 30px 40px; text-align: center; width: 90%; max-width: 450px;
+            margin-bottom: 20px; /* Add space between cards */
         }
-        h1 { color: var(--dark-text); margin-bottom: 20px; font-weight: 600; }
-        lottie-player { width: 250px; height: 250px; margin: 0 auto; }
-        #result-text { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); margin-top: 20px; min-height: 1.5em; }
+        h1 { color: var(--dark-text); margin-bottom: 20px; font-weight: 600; font-size: 1.8rem; }
+        h2 { color: var(--primary-color); margin-bottom: 15px; font-weight: 600; font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;}
+
+        /* Real-Time Section Specific Styles */
+        #realtime-result-text { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); margin-top: 20px; min-height: 1.5em; }
         .controls { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+
+        /* File Upload Section Specific Styles */
+        #file-upload-section input[type="file"] {
+            display: block; margin: 15px auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; cursor: pointer;
+        }
+        #file-upload-section .btn-analyze { background-color: var(--info-color); color: var(--light-text); }
+        #file-upload-section .btn-analyze:hover { background-color: #2980b9; }
+        #file-result-text { font-size: 1.5rem; font-weight: 600; color: var(--info-color); margin-top: 20px; min-height: 1.5em; }
+
+        /* General Button Styles */
         .btn {
             padding: 12px 25px; border: none; border-radius: 8px; font-size: 1rem;
             font-weight: 600; cursor: pointer; transition: background-color 0.3s, transform 0.2s;
@@ -36,149 +49,293 @@
         .btn-stop { background-color: var(--error-color); color: var(--light-text); }
         .btn-stop:hover { background-color: #c0392b; }
         .btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
-        #status-message { margin-top: 15px; color: var(--info-color); font-weight: 400; min-height: 1.2em; }
+
+        /* Status Message Styles */
+        #status-message-realtime, #status-message-upload { margin-top: 15px; font-weight: 400; min-height: 1.2em; }
+        .status-info { color: var(--info-color); }
+        .status-success { color: var(--success-color); }
+        .status-error { color: var(--error-color); }
+        .status-warning { color: var(--warning-color); }
+
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Real-Time Emotion Detector</h1>
-        <lottie-player id="lottie-player" autoplay loop src="/static/animations/neutral.json"></lottie-player>
-        <p id="result-text">Press Start to Begin</p>
+    <h1>Speech Emotion Detector</h1>
+
+    <div class="card" id="realtime-section">
+        <h2>Real-Time Detection</h2>
+        <p id="realtime-result-text">Press Start to Begin</p>
         <div class="controls">
             <button id="start-btn" class="btn btn-start">Start Detection</button>
             <button id="stop-btn" class="btn btn-stop" disabled>Stop Detection</button>
         </div>
-        <p id="status-message">Waiting for microphone access...</p>
+        <p id="status-message-realtime" class="status-info">Waiting for microphone access...</p>
+    </div>
+
+    <div class="card" id="file-upload-section">
+        <h2>Upload & Analyze File</h2>
+        <input type="file" id="audio-file-input" accept="audio/*">
+        <button id="analyze-btn" class="btn btn-analyze">Analyze File</button>
+        <p id="file-result-text">Upload an audio file</p>
+        <p id="status-message-upload" class="status-info"></p>
     </div>
 
     <script>
+        // --- DOM Elements ---
         const startButton = document.getElementById('start-btn');
         const stopButton = document.getElementById('stop-btn');
-        const statusMessage = document.getElementById('status-message');
-        const resultText = document.getElementById('result-text');
-        const lottiePlayer = document.getElementById('lottie-player');
+        const statusMessageRealtime = document.getElementById('status-message-realtime');
+        const realtimeResultText = document.getElementById('realtime-result-text');
 
-        // Lottie animation mapping
-        const emotionAnimations = {
-            'happy': '/static/animations/happy.json',
-            'sad': '/static/animations/sad.json',
-            'angry': '/static/animations/angry.json',
-            'fearful': '/static/animations/fearful.json',
-            'disgust': '/static/animations/disgust.json',
-            'surprised': '/static/animations/surprised.json',
-            'neutral': '/static/animations/neutral.json',
-            'calm': '/static/animations/calm.json',
-        };
+        const fileInput = document.getElementById('audio-file-input');
+        const analyzeButton = document.getElementById('analyze-btn');
+        const fileResultText = document.getElementById('file-result-text');
+        const statusMessageUpload = document.getElementById('status-message-upload');
 
+        // --- Real-Time Variables ---
         let socket;
         let mediaStream;
         let audioContext;
         let scriptProcessor;
+        let isDetecting = false;
 
         const SAMPLE_RATE = 16000; // Must match the backend
-        const BUFFER_SIZE = 4096; // A common buffer size
+        const BUFFER_SIZE = 4096; // Processing buffer size for Web Audio API
 
         // --- Event Listeners ---
         startButton.addEventListener('click', startDetection);
         stopButton.addEventListener('click', stopDetection);
+        analyzeButton.addEventListener('click', analyzeFile);
 
+        // --- Real-Time Functions ---
         function startDetection() {
-            setLoadingState(true, 'Connecting to server...');
+            if (isDetecting) return;
+            setRealtimeLoadingState(true, 'Connecting...');
+            fileInput.disabled = true; // Disable file input during real-time
+            analyzeButton.disabled = true; // Disable analyze button during real-time
 
             // 1. Initialize Socket.IO connection
-            socket = io();
+            // Use window.location.origin to connect to the same server that serves the page
+            socket = io(window.location.origin);
 
             socket.on('connect', () => {
-                console.log('Connected to server.');
-                statusMessage.textContent = 'Connection successful! Starting microphone...';
+                console.log('Connected to server via WebSocket.');
+                displayRealtimeStatus('Connection successful! Starting microphone...', 'success');
                 // 2. Access microphone
                 initMicrophone();
             });
-            
+
             socket.on('connect_error', (err) => {
-                console.error('Connection failed:', err);
-                displayStatus('Could not connect to the server.', 'error');
-                setLoadingState(false);
+                console.error('WebSocket Connection failed:', err);
+                displayRealtimeStatus('Could not connect to the server.', 'error');
+                stopDetection(); // Clean up if connection fails
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server.');
+                // Don't call stopDetection() here automatically, user might have clicked stop.
+                // Or maybe connection just dropped. State is handled by stopDetection click or error.
+                 if (isDetecting) { // Only show error if we were expecting to be connected
+                     displayRealtimeStatus('Server disconnected.', 'error');
+                     stopDetection();
+                 }
             });
 
             // 4. Listen for results from the server
             socket.on('emotion_result', (data) => {
-                console.log('Received emotion:', data.emotion);
-                updateCharacter(data.emotion);
+                console.log('Received real-time emotion:', data.emotion);
+                updateRealtimeEmotion(data.emotion);
+            });
+
+             socket.on('error', (data) => {
+                console.error('Server error:', data.message);
+                displayRealtimeStatus(`Server Error: ${data.message}`, 'error');
+                // Optionally stop detection on server error
+                // stopDetection();
             });
         }
 
         function stopDetection() {
-            setLoadingState(false, 'Detection stopped.');
-            
+            if (!isDetecting) return;
+            setRealtimeLoadingState(false, 'Detection stopped.');
+            fileInput.disabled = false;
+            analyzeButton.disabled = false;
+
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
             }
-            if (audioContext) {
-                audioContext.close();
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                scriptProcessor = null;
+            }
+             if (audioContext) {
+                 // Check state before closing, as closing a closed context throws an error
+                if (audioContext.state !== 'closed') {
+                    audioContext.close().catch(e => console.error("Error closing AudioContext:", e));
+                }
+                audioContext = null;
             }
             if (socket) {
                 socket.disconnect();
+                socket = null;
             }
-            updateCharacter('neutral');
-            resultText.textContent = 'Press Start to Begin';
+            updateRealtimeEmotion('neutral'); // Reset display
+            realtimeResultText.textContent = 'Press Start to Begin';
         }
 
         async function initMicrophone() {
             try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('getUserMedia not supported on your browser!');
+                }
                 // Get audio stream from microphone
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                
-                // Create an AudioContext
-                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+
+                // Create an AudioContext (handle browser differences)
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+
+                // Check if sample rate was honored (some browsers might ignore it)
+                if (audioContext.sampleRate !== SAMPLE_RATE) {
+                     console.warn(`Browser ignored requested sample rate ${SAMPLE_RATE}, using ${audioContext.sampleRate}. Ensure model compatibility.`);
+                     // Optional: You could stop here or try to resample client-side (more complex)
+                }
+
                 const source = audioContext.createMediaStreamSource(mediaStream);
 
-                // Create a ScriptProcessorNode to process audio data
+                // Create a ScriptProcessorNode (legacy, but widely supported)
+                // Arguments: bufferSize, numberOfInputChannels, numberOfOutputChannels
                 scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-                
+
                 scriptProcessor.onaudioprocess = (event) => {
-                    const inputData = event.inputBuffer.getChannelData(0);
-                    // 3. Stream the raw audio data to the server
+                    const inputData = event.inputBuffer.getChannelData(0); // Get Float32 data
+                    // 3. Stream the raw audio data (converted to Int16) to the server
                     if (socket && socket.connected) {
-                         // The server expects 16-bit integers, so we convert from float32
+                         // Convert Float32 [-1.0, 1.0] to Int16 [-32768, 32767]
                         const int16Data = new Int16Array(inputData.length);
                         for (let i = 0; i < inputData.length; i++) {
+                            // Clamp values slightly just in case they exceed +/- 1.0
                             int16Data[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
                         }
+                        // Send ArrayBuffer
                         socket.emit('audio_stream', int16Data.buffer);
                     }
                 };
 
+                // Connect the nodes: Source -> Processor -> Destination (speakers, optional but good practice)
                 source.connect(scriptProcessor);
                 scriptProcessor.connect(audioContext.destination);
 
-                displayStatus('Microphone active. Listening...', 'success');
+                displayRealtimeStatus('Microphone active. Listening...', 'success');
+                isDetecting = true; // Mark detection as active *after* setup succeeds
+
 
             } catch (err) {
                 console.error('Error accessing microphone:', err);
-                displayStatus('Could not access microphone. Please grant permission.', 'error');
-                stopDetection();
+                let userMessage = 'Could not access microphone.';
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    userMessage = 'Microphone permission denied. Please grant permission.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                     userMessage = 'No microphone found.';
+                } else {
+                    userMessage = `Error accessing microphone: ${err.message}`;
+                }
+                displayRealtimeStatus(userMessage, 'error');
+                stopDetection(); // Ensure cleanup if microphone access fails
             }
         }
 
-        // --- UI Helper Functions ---
-        function updateCharacter(emotion) {
-            const animationPath = emotionAnimations[emotion] || emotionAnimations.neutral;
-            lottiePlayer.load(animationPath);
+        function updateRealtimeEmotion(emotion) {
             const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
-            resultText.textContent = `Detected: ${emotionName}`;
+            realtimeResultText.textContent = `Detected: ${emotionName}`;
         }
 
-        function displayStatus(message, type = 'info') {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-${type}`;
+        function displayRealtimeStatus(message, type = 'info') {
+            statusMessageRealtime.textContent = message;
+            statusMessageRealtime.className = `status-${type}`; // Use classes for styling
         }
 
-        function setLoadingState(isLoading, message = '') {
+        function setRealtimeLoadingState(isLoading, message = '') {
+            isDetecting = isLoading; // Update state flag
             startButton.disabled = isLoading;
             stopButton.disabled = !isLoading;
-            statusMessage.textContent = message;
+            displayRealtimeStatus(message, 'info');
         }
+
+
+        // --- File Upload Functions ---
+        async function analyzeFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                displayUploadStatus('Please select an audio file first.', 'warning');
+                return;
+            }
+
+            setUploadLoadingState(true, 'Uploading and analyzing...');
+            startButton.disabled = true; // Disable real-time start during upload
+
+            const formData = new FormData();
+            formData.append('audio_file', file);
+
+            try {
+                const response = await fetch('/upload_predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Handle HTTP errors (like 400, 500)
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                }
+
+                if (data.emotion) {
+                    console.log('Received file emotion:', data.emotion);
+                    const emotionName = data.emotion.charAt(0).toUpperCase() + data.emotion.slice(1);
+                    fileResultText.textContent = `File Result: ${emotionName}`;
+                    displayUploadStatus('Analysis complete.', 'success');
+                } else if (data.error) {
+                    // Handle errors reported by the backend in the JSON response
+                    throw new Error(data.error);
+                } else {
+                    // Unexpected response format
+                    throw new Error('Received unexpected response from server.');
+                }
+
+            } catch (error) {
+                console.error('Error analyzing file:', error);
+                fileResultText.textContent = 'Analysis Failed';
+                displayUploadStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                setUploadLoadingState(false); // Re-enable button
+                // Only re-enable start button if not currently detecting
+                if (!isDetecting) {
+                   startButton.disabled = false;
+                }
+            }
+        }
+
+        function displayUploadStatus(message, type = 'info') {
+            statusMessageUpload.textContent = message;
+            statusMessageUpload.className = `status-${type}`;
+        }
+
+        function setUploadLoadingState(isLoading, message = '') {
+            analyzeButton.disabled = isLoading;
+            if (isLoading) {
+                displayUploadStatus(message, 'info');
+            } else if (!statusMessageUpload.classList.contains('status-error') && !statusMessageUpload.classList.contains('status-warning')) {
+                // Clear info/success message only if no error/warning was shown
+                 displayUploadStatus(''); // Clear status on completion if successful
+            }
+        }
+
+        // --- Initial state ---
+         // Clear status messages on load
+        displayRealtimeStatus('Waiting for microphone access...', 'info');
+        displayUploadStatus('');
 
     </script>
 </body>
