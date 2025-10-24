@@ -10,37 +10,79 @@
         :root {
             --primary-color: #8e44ad; --primary-hover: #732d91; --light-bg: #f0f2f5;
             --dark-text: #34495e; --light-text: #ffffff; --border-color: #dfe6e9;
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); --success-color: #2ecc71;
+            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); --success-color: #2ecc71;
             --error-color: #e74c3c; --info-color: #3498db; --warning-color: #f39c12; --disabled-color: #bdc3c7;
         }
         body {
             font-family: 'Poppins', sans-serif; background: var(--light-bg); display: flex;
-            flex-direction: column; /* Stack sections vertically */
-            justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
+            flex-direction: column; /* Stack header and content */
+            align-items: center; min-height: 100vh; margin: 0; padding: 0; box-sizing: border-box;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            padding: 15px 0;
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky; /* Make header sticky */
+            top: 0;
+            z-index: 10; /* Ensure header stays on top */
+        }
+        header h1 {
+            color: var(--light-text); margin: 0; font-size: 1.5rem;
+        }
+        nav {
+            margin-top: 10px;
+        }
+        nav button {
+            background: none; border: none; color: var(--light-text); opacity: 0.7;
+            padding: 8px 15px; margin: 0 5px; font-size: 1rem; font-family: 'Poppins', sans-serif;
+            cursor: pointer; border-radius: 5px; transition: background-color 0.3s, opacity 0.3s;
+        }
+        nav button.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            opacity: 1;
+            font-weight: 600;
+        }
+        nav button:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.1);
+            opacity: 0.9;
+        }
+        main {
+            width: 100%;
+            max-width: 500px; /* Max width for content */
+            padding: 20px;
+            box-sizing: border-box;
+            margin-top: 20px; /* Space below header */
         }
         .card {
             background: var(--light-text); border-radius: 15px; box-shadow: var(--card-shadow);
-            padding: 30px 40px; text-align: center; width: 90%; max-width: 450px;
-            margin-bottom: 20px; /* Add space between cards */
+            padding: 25px 30px; text-align: center; width: 100%;
+            box-sizing: border-box;
+            /* Hide inactive sections by default */
+            display: none;
         }
-        h1 { color: var(--dark-text); margin-bottom: 20px; font-weight: 600; font-size: 1.8rem; }
-        h2 { color: var(--primary-color); margin-bottom: 15px; font-weight: 600; font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;}
+        .card.active {
+            display: block; /* Show active section */
+        }
+        h2 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; font-weight: 600; font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;}
 
         /* Real-Time Section Specific Styles */
-        #realtime-result-text { font-size: 1.5rem; font-weight: 600; color: var(--primary-color); margin-top: 20px; min-height: 1.5em; }
-        .controls { display: flex; gap: 15px; justify-content: center; margin-top: 25px; }
+        #realtime-result-text { font-size: 1.4rem; font-weight: 600; color: var(--primary-color); margin-top: 15px; min-height: 1.5em; }
+        .controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
 
         /* File Upload Section Specific Styles */
         #file-upload-section input[type="file"] {
-            display: block; margin: 15px auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; cursor: pointer;
+            display: block; margin: 15px auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; cursor: pointer; max-width: 90%;
         }
         #file-upload-section .btn-analyze { background-color: var(--info-color); color: var(--light-text); }
         #file-upload-section .btn-analyze:hover { background-color: #2980b9; }
-        #file-result-text { font-size: 1.5rem; font-weight: 600; color: var(--info-color); margin-top: 20px; min-height: 1.5em; }
+        #file-result-text { font-size: 1.4rem; font-weight: 600; color: var(--info-color); margin-top: 15px; min-height: 1.5em; }
 
         /* General Button Styles */
         .btn {
-            padding: 12px 25px; border: none; border-radius: 8px; font-size: 1rem;
+            padding: 10px 20px; border: none; border-radius: 8px; font-size: 0.9rem;
             font-weight: 600; cursor: pointer; transition: background-color 0.3s, transform 0.2s;
         }
         .btn:active { transform: scale(0.98); }
@@ -51,37 +93,60 @@
         .btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
 
         /* Status Message Styles */
-        #status-message-realtime, #status-message-upload { margin-top: 15px; font-weight: 400; min-height: 1.2em; }
+        #status-message-realtime, #status-message-upload { margin-top: 15px; font-weight: 400; min-height: 1.2em; font-size: 0.9rem;}
         .status-info { color: var(--info-color); }
         .status-success { color: var(--success-color); }
         .status-error { color: var(--error-color); }
         .status-warning { color: var(--warning-color); }
 
+        /* Basic Mobile Responsiveness */
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.3rem; }
+            nav button { font-size: 0.9rem; padding: 6px 10px;}
+            .card { padding: 20px; }
+            h2 { font-size: 1.2rem; }
+            #realtime-result-text, #file-result-text { font-size: 1.2rem; }
+            .btn { font-size: 0.85rem; padding: 10px 15px;}
+        }
     </style>
 </head>
 <body>
-    <h1>Speech Emotion Detector</h1>
 
-    <div class="card" id="realtime-section">
-        <h2>Real-Time Detection</h2>
-        <p id="realtime-result-text">Press Start to Begin</p>
-        <div class="controls">
-            <button id="start-btn" class="btn btn-start">Start Detection</button>
-            <button id="stop-btn" class="btn btn-stop" disabled>Stop Detection</button>
+    <header>
+        <h1>Speech Emotion Detector</h1>
+        <nav>
+            <button id="nav-realtime" data-target="realtime-section" class="active">Real-Time</button>
+            <button id="nav-upload" data-target="file-upload-section">Upload File</button>
+        </nav>
+    </header>
+
+    <main>
+        <div class="card active" id="realtime-section">
+            <h2>Real-Time Detection</h2>
+            <p id="realtime-result-text">Press Start to Begin</p>
+            <div class="controls">
+                <button id="start-btn" class="btn btn-start">Start Detection</button>
+                <button id="stop-btn" class="btn btn-stop" disabled>Stop Detection</button>
+            </div>
+            <p id="status-message-realtime" class="status-info">Waiting for microphone access...</p>
         </div>
-        <p id="status-message-realtime" class="status-info">Waiting for microphone access...</p>
-    </div>
 
-    <div class="card" id="file-upload-section">
-        <h2>Upload & Analyze File</h2>
-        <input type="file" id="audio-file-input" accept="audio/*">
-        <button id="analyze-btn" class="btn btn-analyze">Analyze File</button>
-        <p id="file-result-text">Upload an audio file</p>
-        <p id="status-message-upload" class="status-info"></p>
-    </div>
+        <div class="card" id="file-upload-section">
+            <h2>Upload & Analyze File</h2>
+            <input type="file" id="audio-file-input" accept="audio/*">
+            <button id="analyze-btn" class="btn btn-analyze">Analyze File</button>
+            <p id="file-result-text">Upload an audio file</p>
+            <p id="status-message-upload" class="status-info"></p>
+        </div>
+    </main>
 
     <script>
         // --- DOM Elements ---
+        const navRealtimeButton = document.getElementById('nav-realtime');
+        const navUploadButton = document.getElementById('nav-upload');
+        const realtimeSection = document.getElementById('realtime-section');
+        const fileUploadSection = document.getElementById('file-upload-section');
+
         const startButton = document.getElementById('start-btn');
         const stopButton = document.getElementById('stop-btn');
         const statusMessageRealtime = document.getElementById('status-message-realtime');
@@ -102,7 +167,36 @@
         const SAMPLE_RATE = 16000; // Must match the backend
         const BUFFER_SIZE = 4096; // Processing buffer size for Web Audio API
 
-        // --- Event Listeners ---
+        // --- Navigation Logic ---
+        function showSection(targetId) {
+            // Stop real-time detection if switching away from it
+            if (isDetecting && targetId !== 'realtime-section') {
+                stopDetection();
+            }
+
+            // Hide all sections
+            realtimeSection.classList.remove('active');
+            fileUploadSection.classList.remove('active');
+            // Update button styles
+            navRealtimeButton.classList.remove('active');
+            navUploadButton.classList.remove('active');
+
+            // Show the target section
+            const targetSection = document.getElementById(targetId);
+            const targetButton = document.getElementById(`nav-${targetId.split('-')[0]}`); // e.g., nav-realtime
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+             if (targetButton) {
+                targetButton.classList.add('active');
+            }
+        }
+
+        navRealtimeButton.addEventListener('click', () => showSection('realtime-section'));
+        navUploadButton.addEventListener('click', () => showSection('file-upload-section'));
+
+
+        // --- Event Listeners (Detection & Upload) ---
         startButton.addEventListener('click', startDetection);
         stopButton.addEventListener('click', stopDetection);
         analyzeButton.addEventListener('click', analyzeFile);
@@ -110,38 +204,37 @@
         // --- Real-Time Functions ---
         function startDetection() {
             if (isDetecting) return;
+            // Ensure the realtime section is visible
+            if (!realtimeSection.classList.contains('active')) {
+                showSection('realtime-section');
+            }
             setRealtimeLoadingState(true, 'Connecting...');
             fileInput.disabled = true; // Disable file input during real-time
             analyzeButton.disabled = true; // Disable analyze button during real-time
 
             // 1. Initialize Socket.IO connection
-            // Use window.location.origin to connect to the same server that serves the page
             socket = io(window.location.origin);
 
             socket.on('connect', () => {
                 console.log('Connected to server via WebSocket.');
                 displayRealtimeStatus('Connection successful! Starting microphone...', 'success');
-                // 2. Access microphone
                 initMicrophone();
             });
 
             socket.on('connect_error', (err) => {
                 console.error('WebSocket Connection failed:', err);
                 displayRealtimeStatus('Could not connect to the server.', 'error');
-                stopDetection(); // Clean up if connection fails
+                stopDetection();
             });
 
             socket.on('disconnect', () => {
                 console.log('Disconnected from server.');
-                // Don't call stopDetection() here automatically, user might have clicked stop.
-                // Or maybe connection just dropped. State is handled by stopDetection click or error.
-                 if (isDetecting) { // Only show error if we were expecting to be connected
+                 if (isDetecting) {
                      displayRealtimeStatus('Server disconnected.', 'error');
                      stopDetection();
                  }
             });
 
-            // 4. Listen for results from the server
             socket.on('emotion_result', (data) => {
                 console.log('Received real-time emotion:', data.emotion);
                 updateRealtimeEmotion(data.emotion);
@@ -150,13 +243,16 @@
              socket.on('error', (data) => {
                 console.error('Server error:', data.message);
                 displayRealtimeStatus(`Server Error: ${data.message}`, 'error');
-                // Optionally stop detection on server error
-                // stopDetection();
             });
         }
 
         function stopDetection() {
-            if (!isDetecting) return;
+            // Check if we are actually detecting to prevent unnecessary cleanup/state changes
+            if (!isDetecting && !mediaStream && !audioContext && !socket) {
+                 console.log("Stop called but not currently detecting.");
+                 return;
+            }
+            console.log("Stopping detection...");
             setRealtimeLoadingState(false, 'Detection stopped.');
             fileInput.disabled = false;
             analyzeButton.disabled = false;
@@ -164,23 +260,34 @@
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
+                console.log("Media stream stopped.");
             }
-            if (scriptProcessor) {
+             if (scriptProcessor) {
+                 // Disconnect nodes first
                 scriptProcessor.disconnect();
+                scriptProcessor.onaudioprocess = null; // Remove the handler
                 scriptProcessor = null;
-            }
+                 console.log("Script processor disconnected.");
+             }
              if (audioContext) {
-                 // Check state before closing, as closing a closed context throws an error
-                if (audioContext.state !== 'closed') {
-                    audioContext.close().catch(e => console.error("Error closing AudioContext:", e));
-                }
-                audioContext = null;
-            }
+                 // Close the context after a short delay to ensure cleanup
+                setTimeout(() => {
+                    if (audioContext && audioContext.state !== 'closed') {
+                        audioContext.close().then(() => {
+                            console.log("AudioContext closed.");
+                            audioContext = null;
+                        }).catch(e => console.error("Error closing AudioContext:", e));
+                    }
+                }, 100); // 100ms delay might help cleanup
+             } else {
+                 console.log("AudioContext already null or closed.");
+             }
             if (socket) {
                 socket.disconnect();
                 socket = null;
+                console.log("WebSocket disconnected.");
             }
-            updateRealtimeEmotion('neutral'); // Reset display
+            updateRealtimeEmotion('neutral');
             realtimeResultText.textContent = 'Press Start to Begin';
         }
 
@@ -189,75 +296,79 @@
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('getUserMedia not supported on your browser!');
                 }
-                // Get audio stream from microphone
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-                // Create an AudioContext (handle browser differences)
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+                // Check if context exists and is running, reuse if possible, else create new
+                if (!audioContext || audioContext.state === 'closed') {
+                    audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
+                     console.log(`AudioContext created/recreated. State: ${audioContext.state}, Sample Rate: ${audioContext.sampleRate}`);
+                } else if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                    console.log(`AudioContext resumed. State: ${audioContext.state}`);
+                }
 
-                // Check if sample rate was honored (some browsers might ignore it)
+
                 if (audioContext.sampleRate !== SAMPLE_RATE) {
-                     console.warn(`Browser ignored requested sample rate ${SAMPLE_RATE}, using ${audioContext.sampleRate}. Ensure model compatibility.`);
-                     // Optional: You could stop here or try to resample client-side (more complex)
+                     console.warn(`AudioContext running at ${audioContext.sampleRate}Hz, requested ${SAMPLE_RATE}Hz.`);
+                     // Potentially add resampling logic here if critical
                 }
 
                 const source = audioContext.createMediaStreamSource(mediaStream);
 
-                // Create a ScriptProcessorNode (legacy, but widely supported)
-                // Arguments: bufferSize, numberOfInputChannels, numberOfOutputChannels
-                scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+                // Recreate scriptProcessor if it doesn't exist or context was recreated
+                if (!scriptProcessor) {
+                    scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
+                     console.log("ScriptProcessor created.");
+                }
 
                 scriptProcessor.onaudioprocess = (event) => {
-                    const inputData = event.inputBuffer.getChannelData(0); // Get Float32 data
-                    // 3. Stream the raw audio data (converted to Int16) to the server
+                    const inputData = event.inputBuffer.getChannelData(0);
                     if (socket && socket.connected) {
-                         // Convert Float32 [-1.0, 1.0] to Int16 [-32768, 32767]
                         const int16Data = new Int16Array(inputData.length);
                         for (let i = 0; i < inputData.length; i++) {
-                            // Clamp values slightly just in case they exceed +/- 1.0
                             int16Data[i] = Math.max(-1, Math.min(1, inputData[i])) * 32767;
                         }
-                        // Send ArrayBuffer
                         socket.emit('audio_stream', int16Data.buffer);
                     }
                 };
 
-                // Connect the nodes: Source -> Processor -> Destination (speakers, optional but good practice)
                 source.connect(scriptProcessor);
-                scriptProcessor.connect(audioContext.destination);
+                scriptProcessor.connect(audioContext.destination); // Connect to output (speakers)
 
                 displayRealtimeStatus('Microphone active. Listening...', 'success');
-                isDetecting = true; // Mark detection as active *after* setup succeeds
-
+                isDetecting = true; // Set state only after successful setup
 
             } catch (err) {
-                console.error('Error accessing microphone:', err);
+                console.error('Error initializing microphone:', err);
                 let userMessage = 'Could not access microphone.';
                 if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                     userMessage = 'Microphone permission denied. Please grant permission.';
                 } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
                      userMessage = 'No microphone found.';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    userMessage = 'Microphone is already in use or cannot be accessed.';
                 } else {
                     userMessage = `Error accessing microphone: ${err.message}`;
                 }
                 displayRealtimeStatus(userMessage, 'error');
-                stopDetection(); // Ensure cleanup if microphone access fails
+                stopDetection(); // Ensure cleanup on failure
             }
         }
 
         function updateRealtimeEmotion(emotion) {
+            if (!emotion) return; // Prevent errors if emotion is undefined/null
             const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
             realtimeResultText.textContent = `Detected: ${emotionName}`;
         }
 
         function displayRealtimeStatus(message, type = 'info') {
             statusMessageRealtime.textContent = message;
-            statusMessageRealtime.className = `status-${type}`; // Use classes for styling
+            statusMessageRealtime.className = `status-${type}`;
         }
 
         function setRealtimeLoadingState(isLoading, message = '') {
-            isDetecting = isLoading; // Update state flag
+            isDetecting = isLoading; // Consistent state update
             startButton.disabled = isLoading;
             stopButton.disabled = !isLoading;
             displayRealtimeStatus(message, 'info');
@@ -266,6 +377,11 @@
 
         // --- File Upload Functions ---
         async function analyzeFile() {
+             // Ensure the upload section is visible
+            if (!fileUploadSection.classList.contains('active')) {
+                showSection('file-upload-section');
+            }
+
             const file = fileInput.files[0];
             if (!file) {
                 displayUploadStatus('Please select an audio file first.', 'warning');
@@ -279,7 +395,8 @@
             formData.append('audio_file', file);
 
             try {
-                const response = await fetch('/upload_predict', {
+                // Use window.location.origin to ensure correct URL on Render
+                const response = await fetch(`${window.location.origin}/upload_predict`, {
                     method: 'POST',
                     body: formData
                 });
@@ -287,7 +404,6 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // Handle HTTP errors (like 400, 500)
                     throw new Error(data.error || `HTTP error! status: ${response.status}`);
                 }
 
@@ -297,10 +413,8 @@
                     fileResultText.textContent = `File Result: ${emotionName}`;
                     displayUploadStatus('Analysis complete.', 'success');
                 } else if (data.error) {
-                    // Handle errors reported by the backend in the JSON response
                     throw new Error(data.error);
                 } else {
-                    // Unexpected response format
                     throw new Error('Received unexpected response from server.');
                 }
 
@@ -309,11 +423,12 @@
                 fileResultText.textContent = 'Analysis Failed';
                 displayUploadStatus(`Error: ${error.message}`, 'error');
             } finally {
-                setUploadLoadingState(false); // Re-enable button
-                // Only re-enable start button if not currently detecting
+                setUploadLoadingState(false);
+                // Only re-enable start button if not currently detecting (shouldn't be, but safe check)
                 if (!isDetecting) {
                    startButton.disabled = false;
                 }
+                 fileInput.value = ''; // Clear the file input after processing
             }
         }
 
@@ -327,15 +442,15 @@
             if (isLoading) {
                 displayUploadStatus(message, 'info');
             } else if (!statusMessageUpload.classList.contains('status-error') && !statusMessageUpload.classList.contains('status-warning')) {
-                // Clear info/success message only if no error/warning was shown
-                 displayUploadStatus(''); // Clear status on completion if successful
+                 displayUploadStatus('');
             }
         }
 
         // --- Initial state ---
-         // Clear status messages on load
-        displayRealtimeStatus('Waiting for microphone access...', 'info');
-        displayUploadStatus('');
+        // Ensure only the default section is shown on load
+        showSection('realtime-section');
+        displayRealtimeStatus('Press Start to Begin', 'info'); // Initial message for realtime
+        displayUploadStatus(''); // Clear upload status
 
     </script>
 </body>
