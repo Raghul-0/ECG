@@ -68,8 +68,19 @@
         }
         h2 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; font-weight: 600; font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;}
 
+        /* --- NEW EMOJI STYLE --- */
+        .emoji-display {
+            font-size: 5rem; /* Large emoji */
+            line-height: 1;
+            margin: 10px 0 15px 0;
+            min-height: 80px; /* Reserve space to prevent layout jump */
+            transition: transform 0.2s ease-in-out;
+        }
+
         /* Real-Time Section Specific Styles */
-        #realtime-result-text { font-size: 1.4rem; font-weight: 600; color: var(--primary-color); margin-top: 15px; min-height: 1.5em; }
+        #realtime-result-text { 
+            font-size: 1.4rem; font-weight: 600; color: var(--primary-color); margin-top: 0; /* Reduced margin-top */ min-height: 1.5em; 
+        }
         .controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
 
         /* File Upload Section Specific Styles */
@@ -78,7 +89,9 @@
         }
         #file-upload-section .btn-analyze { background-color: var(--info-color); color: var(--light-text); }
         #file-upload-section .btn-analyze:hover { background-color: #2980b9; }
-        #file-result-text { font-size: 1.4rem; font-weight: 600; color: var(--info-color); margin-top: 15px; min-height: 1.5em; }
+        #file-result-text { 
+            font-size: 1.4rem; font-weight: 600; color: var(--info-color); margin-top: 0; /* Reduced margin-top */ min-height: 1.5em; 
+        }
 
         /* General Button Styles */
         .btn {
@@ -105,7 +118,16 @@
             nav button { font-size: 0.9rem; padding: 6px 10px;}
             .card { padding: 20px; }
             h2 { font-size: 1.2rem; }
-            #realtime-result-text, #file-result-text { font-size: 1.2rem; }
+
+            /* --- NEW EMOJI MOBILE STYLE --- */
+            .emoji-display {
+                font-size: 4rem; /* Slightly smaller emoji for mobile */
+                min-height: 65px;
+            }
+            
+            #realtime-result-text, #file-result-text { 
+                font-size: 1.2rem; /* Adjusted text size */
+            }
             .btn { font-size: 0.85rem; padding: 10px 15px;}
         }
     </style>
@@ -123,6 +145,8 @@
     <main>
         <div class="card active" id="realtime-section">
             <h2>Real-Time Detection</h2>
+            <div id="realtime-emoji-display" class="emoji-display"></div>
+            
             <p id="realtime-result-text">Press Start to Begin</p>
             <div class="controls">
                 <button id="start-btn" class="btn btn-start">Start Detection</button>
@@ -133,6 +157,8 @@
 
         <div class="card" id="file-upload-section">
             <h2>Upload & Analyze File</h2>
+            <div id="file-emoji-display" class="emoji-display"></div>
+
             <input type="file" id="audio-file-input" accept="audio/*">
             <button id="analyze-btn" class="btn btn-analyze">Analyze File</button>
             <p id="file-result-text">Upload an audio file</p>
@@ -151,11 +177,13 @@
         const stopButton = document.getElementById('stop-btn');
         const statusMessageRealtime = document.getElementById('status-message-realtime');
         const realtimeResultText = document.getElementById('realtime-result-text');
+        const realtimeEmojiDisplay = document.getElementById('realtime-emoji-display'); // <-- NEW
 
         const fileInput = document.getElementById('audio-file-input');
         const analyzeButton = document.getElementById('analyze-btn');
         const fileResultText = document.getElementById('file-result-text');
         const statusMessageUpload = document.getElementById('status-message-upload');
+        const fileEmojiDisplay = document.getElementById('file-emoji-display'); // <-- NEW
 
         // --- Real-Time Variables ---
         let socket;
@@ -166,6 +194,24 @@
 
         const SAMPLE_RATE = 16000; // Must match the backend
         const BUFFER_SIZE = 4096; // Processing buffer size for Web Audio API
+        
+        // --- NEW EMOJI MAPPING ---
+        // Add all emotions your model can output.
+        // Keys should be lowercase.
+        const emotionEmojis = {
+            'happy': '😊',
+            'sad': '😢',
+            'angry': '😠',
+            'neutral': '😐',
+            'fear': '😨',
+            'disgust': '🤢',
+            'surprise': '😮',
+            'calm': '😌',
+            // --- Add more as needed ---
+            'anxious': '😟',
+            'bored': '😑',
+            'default': '❓' // Fallback
+        };
 
         // --- Navigation Logic ---
         function showSection(targetId) {
@@ -200,6 +246,13 @@
         startButton.addEventListener('click', startDetection);
         stopButton.addEventListener('click', stopDetection);
         analyzeButton.addEventListener('click', analyzeFile);
+        
+        // --- NEW: Clear file result when new file is selected ---
+        fileInput.addEventListener('change', () => {
+             fileResultText.textContent = 'Upload an audio file';
+             fileEmojiDisplay.textContent = '';
+             displayUploadStatus(''); // Clear status
+        });
 
         // --- Real-Time Functions ---
         function startDetection() {
@@ -287,8 +340,9 @@
                 socket = null;
                 console.log("WebSocket disconnected.");
             }
-            updateRealtimeEmotion('neutral');
-            realtimeResultText.textContent = 'Press Start to Begin';
+            
+            // --- UPDATED: Reset UI on stop ---
+            updateRealtimeEmotion(null, true); // true = isReset
         }
 
         async function initMicrophone() {
@@ -356,10 +410,27 @@
             }
         }
 
-        function updateRealtimeEmotion(emotion) {
-            if (!emotion) return; // Prevent errors if emotion is undefined/null
+        // --- UPDATED Function ---
+        function updateRealtimeEmotion(emotion, isReset = false) {
+            if (isReset) {
+                realtimeResultText.textContent = 'Press Start to Begin';
+                realtimeEmojiDisplay.textContent = ''; // Clear emoji
+                return;
+            }
+            if (!emotion) return; 
+
+            const emotionKey = emotion.toLowerCase();
+            const emoji = emotionEmojis[emotionKey] || emotionEmojis['default'];
             const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+            
             realtimeResultText.textContent = `Detected: ${emotionName}`;
+            realtimeEmojiDisplay.textContent = emoji;
+
+            // Simple "pop" animation
+            realtimeEmojiDisplay.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                realtimeEmojiDisplay.style.transform = 'scale(1)';
+            }, 150);
         }
 
         function displayRealtimeStatus(message, type = 'info') {
@@ -390,6 +461,10 @@
 
             setUploadLoadingState(true, 'Uploading and analyzing...');
             startButton.disabled = true; // Disable real-time start during upload
+            
+            // --- NEW: Reset UI for file upload ---
+            fileResultText.textContent = 'Analyzing...';
+            fileEmojiDisplay.textContent = '⏳';
 
             const formData = new FormData();
             formData.append('audio_file', file);
@@ -407,10 +482,20 @@
                     throw new Error(data.error || `HTTP error! status: ${response.status}`);
                 }
 
+                // --- UPDATED: Show emoji on success ---
                 if (data.emotion) {
                     console.log('Received file emotion:', data.emotion);
                     const emotionName = data.emotion.charAt(0).toUpperCase() + data.emotion.slice(1);
+                    const emotionKey = data.emotion.toLowerCase();
+                    const emoji = emotionEmojis[emotionKey] || emotionEmojis['default'];
+
                     fileResultText.textContent = `File Result: ${emotionName}`;
+                    fileEmojiDisplay.textContent = emoji; // <-- SET EMOJI
+                    fileEmojiDisplay.style.transform = 'scale(1.2)';
+                    setTimeout(() => {
+                        fileEmojiDisplay.style.transform = 'scale(1)';
+                    }, 150);
+
                     displayUploadStatus('Analysis complete.', 'success');
                 } else if (data.error) {
                     throw new Error(data.error);
@@ -420,7 +505,9 @@
 
             } catch (error) {
                 console.error('Error analyzing file:', error);
+                // --- UPDATED: Show error emoji ---
                 fileResultText.textContent = 'Analysis Failed';
+                fileEmojiDisplay.textContent = '❌'; // <-- SET ERROR EMOJI
                 displayUploadStatus(`Error: ${error.message}`, 'error');
             } finally {
                 setUploadLoadingState(false);
@@ -451,6 +538,8 @@
         showSection('realtime-section');
         displayRealtimeStatus('Press Start to Begin', 'info'); // Initial message for realtime
         displayUploadStatus(''); // Clear upload status
+        realtimeEmojiDisplay.textContent = ''; // NEW
+        fileEmojiDisplay.textContent = ''; // NEW
 
     </script>
 </body>
