@@ -10,9 +10,26 @@
         :root {
             --primary-color: #8e44ad; --primary-hover: #732d91; --light-bg: #f0f2f5;
             --dark-text: #34495e; --light-text: #ffffff; --border-color: #dfe6e9;
-            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); --success-color: #2ecc71;
-            --error-color: #e74c3c; --info-color: #3498db; --warning-color: #f39c12; --disabled-color: #bdc3c7;
+            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); 
+            
+            /* Emotion Colors */
+            --success-color: #2ecc71;  /* calm */
+            --error-color: #e74c3c;    /* angry */
+            --info-color: #3498db;     /* sad */
+            --warning-color: #f39c12;  /* happy */
+            --disabled-color: #bdc3c7; /* neutral */
+            --fear-color: #9b59b6;     /* fear */
+            --disgust-color: #16a085;  /* disgust */
+            --surprise-color: #e67e22; /* surprise */
         }
+        
+        /* --- NEW: Animation --- */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         body {
             font-family: 'Poppins', sans-serif; background: var(--light-bg); display: flex;
             flex-direction: column; /* Stack header and content */
@@ -60,26 +77,46 @@
             background: var(--light-text); border-radius: 15px; box-shadow: var(--card-shadow);
             padding: 25px 30px; text-align: center; width: 100%;
             box-sizing: border-box;
-            /* Hide inactive sections by default */
-            display: none;
+            display: none; /* Hide inactive sections by default */
         }
         .card.active {
             display: block; /* Show active section */
         }
         h2 { color: var(--primary-color); margin-top: 0; margin-bottom: 15px; font-weight: 600; font-size: 1.4rem; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;}
 
-        /* --- NEW EMOJI STYLE --- */
-        .emoji-display {
-            font-size: 5rem; /* Large emoji */
-            line-height: 1;
-            margin: 10px 0 15px 0;
-            min-height: 80px; /* Reserve space to prevent layout jump */
-            transition: transform 0.2s ease-in-out;
+        /* --- NEW: Emotion Circle Display --- */
+        .emotion-display-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 15px 0;
+            min-height: 130px; /* Reserve space */
         }
+        .emotion-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #fafafa; /* Slightly off-white */
+            border: 6px solid var(--border-color); /* Default border */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.3s ease-in-out;
+        }
+        .emotion-circle.pop {
+            animation: pop 0.3s ease-in-out;
+        }
+        .emotion-circle span { /* The emoji icon itself */
+            font-size: 4rem; /* 64px */
+            line-height: 1;
+            transition: transform 0.2s;
+        }
+        /* --- END NEW --- */
+
 
         /* Real-Time Section Specific Styles */
         #realtime-result-text { 
-            font-size: 1.4rem; font-weight: 600; color: var(--primary-color); margin-top: 0; /* Reduced margin-top */ min-height: 1.5em; 
+            font-size: 1.4rem; font-weight: 600; color: var(--primary-color); margin-top: 0; min-height: 1.5em; 
         }
         .controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
 
@@ -90,7 +127,7 @@
         #file-upload-section .btn-analyze { background-color: var(--info-color); color: var(--light-text); }
         #file-upload-section .btn-analyze:hover { background-color: #2980b9; }
         #file-result-text { 
-            font-size: 1.4rem; font-weight: 600; color: var(--info-color); margin-top: 0; /* Reduced margin-top */ min-height: 1.5em; 
+            font-size: 1.4rem; font-weight: 600; color: var(--info-color); margin-top: 0; min-height: 1.5em; 
         }
 
         /* General Button Styles */
@@ -120,9 +157,16 @@
             h2 { font-size: 1.2rem; }
 
             /* --- NEW EMOJI MOBILE STYLE --- */
-            .emoji-display {
-                font-size: 4rem; /* Slightly smaller emoji for mobile */
-                min-height: 65px;
+            .emotion-display-container {
+                min-height: 110px;
+            }
+            .emotion-circle {
+                width: 100px;
+                height: 100px;
+                border-width: 5px;
+            }
+            .emotion-circle span {
+                font-size: 3.5rem;
             }
             
             #realtime-result-text, #file-result-text { 
@@ -145,7 +189,12 @@
     <main>
         <div class="card active" id="realtime-section">
             <h2>Real-Time Detection</h2>
-            <div id="realtime-emoji-display" class="emoji-display"></div>
+            
+            <div class="emotion-display-container">
+                <div id="realtime-emotion-circle" class="emotion-circle">
+                    <span id="realtime-emoji-icon"></span>
+                </div>
+            </div>
             
             <p id="realtime-result-text">Press Start to Begin</p>
             <div class="controls">
@@ -157,7 +206,12 @@
 
         <div class="card" id="file-upload-section">
             <h2>Upload & Analyze File</h2>
-            <div id="file-emoji-display" class="emoji-display"></div>
+
+            <div class="emotion-display-container">
+                <div id="file-emotion-circle" class="emotion-circle">
+                    <span id="file-emoji-icon"></span>
+                </div>
+            </div>
 
             <input type="file" id="audio-file-input" accept="audio/*">
             <button id="analyze-btn" class="btn btn-analyze">Analyze File</button>
@@ -177,13 +231,18 @@
         const stopButton = document.getElementById('stop-btn');
         const statusMessageRealtime = document.getElementById('status-message-realtime');
         const realtimeResultText = document.getElementById('realtime-result-text');
-        const realtimeEmojiDisplay = document.getElementById('realtime-emoji-display'); // <-- NEW
+        // --- UPDATED DOM Elements ---
+        const realtimeEmotionCircle = document.getElementById('realtime-emotion-circle');
+        const realtimeEmojiIcon = document.getElementById('realtime-emoji-icon');
 
         const fileInput = document.getElementById('audio-file-input');
         const analyzeButton = document.getElementById('analyze-btn');
         const fileResultText = document.getElementById('file-result-text');
         const statusMessageUpload = document.getElementById('status-message-upload');
-        const fileEmojiDisplay = document.getElementById('file-emoji-display'); // <-- NEW
+        // --- UPDATED DOM Elements ---
+        const fileEmotionCircle = document.getElementById('file-emotion-circle');
+        const fileEmojiIcon = document.getElementById('file-emoji-icon');
+
 
         // --- Real-Time Variables ---
         let socket;
@@ -195,47 +254,39 @@
         const SAMPLE_RATE = 16000; // Must match the backend
         const BUFFER_SIZE = 4096; // Processing buffer size for Web Audio API
         
-        // --- NEW EMOJI MAPPING ---
-        // Add all emotions your model can output.
-        // Keys should be lowercase.
-        const emotionEmojis = {
-            'happy': '😊',
-            'sad': '😢',
-            'angry': '😠',
-            'neutral': '😐',
-            'fear': '😨',
-            'disgust': '🤢',
-            'surprise': '😮',
-            'calm': '😌',
+        // --- NEW: EMOJI and COLOR MAPPING ---
+        // Make sure keys are lowercase
+        const emotionData = {
+            'happy':    { emoji: '😊', color: 'var(--warning-color)' },
+            'sad':      { emoji: '😢', color: 'var(--info-color)' },
+            'angry':    { emoji: '😠', color: 'var(--error-color)' },
+            'neutral':  { emoji: '😐', color: 'var(--disabled-color)' },
+            'fear':     { emoji: '😨', color: 'var(--fear-color)' },
+            'fearful':  { emoji: '😨', color: 'var(--fear-color)' }, // Alias for 'fear'
+            'disgust':  { emoji: '🤢', color: 'var(--disgust-color)' },
+            'surprise': { emoji: '😮', color: 'var(--surprise-color)' },
+            'surprised':{ emoji: '😮', color: 'var(--surprise-color)' }, // Alias
+            'calm':     { emoji: '😌', color: 'var(--success-color)' },
             // --- Add more as needed ---
-            'anxious': '😟',
-            'bored': '😑',
-            'default': '❓' // Fallback
+            'anxious':  { emoji: '😟', color: 'var(--info-color)' },
+            'bored':    { emoji: '😑', color: 'var(--disabled-color)' },
+            'default':  { emoji: '❓', color: 'var(--dark-text)' } // Fallback
         };
 
         // --- Navigation Logic ---
         function showSection(targetId) {
-            // Stop real-time detection if switching away from it
             if (isDetecting && targetId !== 'realtime-section') {
                 stopDetection();
             }
-
-            // Hide all sections
             realtimeSection.classList.remove('active');
             fileUploadSection.classList.remove('active');
-            // Update button styles
             navRealtimeButton.classList.remove('active');
             navUploadButton.classList.remove('active');
 
-            // Show the target section
             const targetSection = document.getElementById(targetId);
-            const targetButton = document.getElementById(`nav-${targetId.split('-')[0]}`); // e.g., nav-realtime
-            if (targetSection) {
-                targetSection.classList.add('active');
-            }
-             if (targetButton) {
-                targetButton.classList.add('active');
-            }
+            const targetButton = document.getElementById(`nav-${targetId.split('-')[0]}`);
+            if (targetSection) targetSection.classList.add('active');
+            if (targetButton) targetButton.classList.add('active');
         }
 
         navRealtimeButton.addEventListener('click', () => showSection('realtime-section'));
@@ -250,22 +301,21 @@
         // --- NEW: Clear file result when new file is selected ---
         fileInput.addEventListener('change', () => {
              fileResultText.textContent = 'Upload an audio file';
-             fileEmojiDisplay.textContent = '';
+             fileEmojiIcon.textContent = '';
+             fileEmotionCircle.style.borderColor = 'var(--border-color)'; // Reset border
              displayUploadStatus(''); // Clear status
         });
 
         // --- Real-Time Functions ---
         function startDetection() {
             if (isDetecting) return;
-            // Ensure the realtime section is visible
             if (!realtimeSection.classList.contains('active')) {
                 showSection('realtime-section');
             }
             setRealtimeLoadingState(true, 'Connecting...');
-            fileInput.disabled = true; // Disable file input during real-time
-            analyzeButton.disabled = true; // Disable analyze button during real-time
+            fileInput.disabled = true; 
+            analyzeButton.disabled = true;
 
-            // 1. Initialize Socket.IO connection
             socket = io(window.location.origin);
 
             socket.on('connect', () => {
@@ -273,13 +323,11 @@
                 displayRealtimeStatus('Connection successful! Starting microphone...', 'success');
                 initMicrophone();
             });
-
             socket.on('connect_error', (err) => {
                 console.error('WebSocket Connection failed:', err);
                 displayRealtimeStatus('Could not connect to the server.', 'error');
                 stopDetection();
             });
-
             socket.on('disconnect', () => {
                 console.log('Disconnected from server.');
                  if (isDetecting) {
@@ -287,12 +335,9 @@
                      stopDetection();
                  }
             });
-
             socket.on('emotion_result', (data) => {
-                console.log('Received real-time emotion:', data.emotion);
                 updateRealtimeEmotion(data.emotion);
             });
-
              socket.on('error', (data) => {
                 console.error('Server error:', data.message);
                 displayRealtimeStatus(`Server Error: ${data.message}`, 'error');
@@ -300,11 +345,8 @@
         }
 
         function stopDetection() {
-            // Check if we are actually detecting to prevent unnecessary cleanup/state changes
-            if (!isDetecting && !mediaStream && !audioContext && !socket) {
-                 console.log("Stop called but not currently detecting.");
-                 return;
-            }
+            if (!isDetecting && !mediaStream && !audioContext && !socket) return;
+            
             console.log("Stopping detection...");
             setRealtimeLoadingState(false, 'Detection stopped.');
             fileInput.disabled = false;
@@ -313,32 +355,23 @@
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
-                console.log("Media stream stopped.");
             }
              if (scriptProcessor) {
-                 // Disconnect nodes first
                 scriptProcessor.disconnect();
-                scriptProcessor.onaudioprocess = null; // Remove the handler
+                scriptProcessor.onaudioprocess = null; 
                 scriptProcessor = null;
-                 console.log("Script processor disconnected.");
              }
              if (audioContext) {
-                 // Close the context after a short delay to ensure cleanup
                 setTimeout(() => {
                     if (audioContext && audioContext.state !== 'closed') {
-                        audioContext.close().then(() => {
-                            console.log("AudioContext closed.");
-                            audioContext = null;
-                        }).catch(e => console.error("Error closing AudioContext:", e));
+                        audioContext.close().catch(e => console.error("Error closing AudioContext:", e));
+                        audioContext = null;
                     }
-                }, 100); // 100ms delay might help cleanup
-             } else {
-                 console.log("AudioContext already null or closed.");
+                }, 100); 
              }
             if (socket) {
                 socket.disconnect();
                 socket = null;
-                console.log("WebSocket disconnected.");
             }
             
             // --- UPDATED: Reset UI on stop ---
@@ -353,28 +386,14 @@
                 mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
-                // Check if context exists and is running, reuse if possible, else create new
                 if (!audioContext || audioContext.state === 'closed') {
                     audioContext = new AudioContext({ sampleRate: SAMPLE_RATE });
-                     console.log(`AudioContext created/recreated. State: ${audioContext.state}, Sample Rate: ${audioContext.sampleRate}`);
                 } else if (audioContext.state === 'suspended') {
                     await audioContext.resume();
-                    console.log(`AudioContext resumed. State: ${audioContext.state}`);
-                }
-
-
-                if (audioContext.sampleRate !== SAMPLE_RATE) {
-                     console.warn(`AudioContext running at ${audioContext.sampleRate}Hz, requested ${SAMPLE_RATE}Hz.`);
-                     // Potentially add resampling logic here if critical
                 }
 
                 const source = audioContext.createMediaStreamSource(mediaStream);
-
-                // Recreate scriptProcessor if it doesn't exist or context was recreated
-                if (!scriptProcessor) {
-                    scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-                     console.log("ScriptProcessor created.");
-                }
+                scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
 
                 scriptProcessor.onaudioprocess = (event) => {
                     const inputData = event.inputBuffer.getChannelData(0);
@@ -388,10 +407,10 @@
                 };
 
                 source.connect(scriptProcessor);
-                scriptProcessor.connect(audioContext.destination); // Connect to output (speakers)
+                scriptProcessor.connect(audioContext.destination); 
 
                 displayRealtimeStatus('Microphone active. Listening...', 'success');
-                isDetecting = true; // Set state only after successful setup
+                isDetecting = true; 
 
             } catch (err) {
                 console.error('Error initializing microphone:', err);
@@ -402,8 +421,6 @@
                      userMessage = 'No microphone found.';
                 } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
                     userMessage = 'Microphone is already in use or cannot be accessed.';
-                } else {
-                    userMessage = `Error accessing microphone: ${err.message}`;
                 }
                 displayRealtimeStatus(userMessage, 'error');
                 stopDetection(); // Ensure cleanup on failure
@@ -414,23 +431,25 @@
         function updateRealtimeEmotion(emotion, isReset = false) {
             if (isReset) {
                 realtimeResultText.textContent = 'Press Start to Begin';
-                realtimeEmojiDisplay.textContent = ''; // Clear emoji
+                realtimeEmojiIcon.textContent = ''; // Clear emoji
+                realtimeEmotionCircle.style.borderColor = 'var(--border-color)'; // Reset border
+                realtimeEmotionCircle.classList.remove('pop');
                 return;
             }
             if (!emotion) return; 
 
             const emotionKey = emotion.toLowerCase();
-            const emoji = emotionEmojis[emotionKey] || emotionEmojis['default'];
+            const data = emotionData[emotionKey] || emotionData['default'];
             const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
             
             realtimeResultText.textContent = `Detected: ${emotionName}`;
-            realtimeEmojiDisplay.textContent = emoji;
+            realtimeEmojiIcon.textContent = data.emoji;
+            realtimeEmotionCircle.style.borderColor = data.color; // Set border color
 
-            // Simple "pop" animation
-            realtimeEmojiDisplay.style.transform = 'scale(1.2)';
-            setTimeout(() => {
-                realtimeEmojiDisplay.style.transform = 'scale(1)';
-            }, 150);
+            // Trigger "pop" animation
+            realtimeEmotionCircle.classList.remove('pop'); // Remove first to re-trigger
+            void realtimeEmotionCircle.offsetWidth; // Trigger reflow
+            realtimeEmotionCircle.classList.add('pop');
         }
 
         function displayRealtimeStatus(message, type = 'info') {
@@ -439,7 +458,7 @@
         }
 
         function setRealtimeLoadingState(isLoading, message = '') {
-            isDetecting = isLoading; // Consistent state update
+            isDetecting = isLoading; 
             startButton.disabled = isLoading;
             stopButton.disabled = !isLoading;
             displayRealtimeStatus(message, 'info');
@@ -448,7 +467,6 @@
 
         // --- File Upload Functions ---
         async function analyzeFile() {
-             // Ensure the upload section is visible
             if (!fileUploadSection.classList.contains('active')) {
                 showSection('file-upload-section');
             }
@@ -462,15 +480,15 @@
             setUploadLoadingState(true, 'Uploading and analyzing...');
             startButton.disabled = true; // Disable real-time start during upload
             
-            // --- NEW: Reset UI for file upload ---
+            // --- UPDATED: Reset UI for file upload ---
             fileResultText.textContent = 'Analyzing...';
-            fileEmojiDisplay.textContent = '⏳';
+            fileEmojiIcon.textContent = '⏳';
+            fileEmotionCircle.style.borderColor = 'var(--info-color)'; // Loading border
 
             const formData = new FormData();
             formData.append('audio_file', file);
 
             try {
-                // Use window.location.origin to ensure correct URL on Render
                 const response = await fetch(`${window.location.origin}/upload_predict`, {
                     method: 'POST',
                     body: formData
@@ -482,40 +500,39 @@
                     throw new Error(data.error || `HTTP error! status: ${response.status}`);
                 }
 
-                // --- UPDATED: Show emoji on success ---
+                // --- UPDATED: Show emoji and border on success ---
                 if (data.emotion) {
-                    console.log('Received file emotion:', data.emotion);
                     const emotionName = data.emotion.charAt(0).toUpperCase() + data.emotion.slice(1);
                     const emotionKey = data.emotion.toLowerCase();
-                    const emoji = emotionEmojis[emotionKey] || emotionEmojis['default'];
+                    const emotionInfo = emotionData[emotionKey] || emotionData['default'];
 
                     fileResultText.textContent = `File Result: ${emotionName}`;
-                    fileEmojiDisplay.textContent = emoji; // <-- SET EMOJI
-                    fileEmojiDisplay.style.transform = 'scale(1.2)';
-                    setTimeout(() => {
-                        fileEmojiDisplay.style.transform = 'scale(1)';
-                    }, 150);
+                    fileEmojiIcon.textContent = emotionInfo.emoji; // Set emoji
+                    fileEmotionCircle.style.borderColor = emotionInfo.color; // Set border
+
+                    // Trigger "pop" animation
+                    fileEmotionCircle.classList.remove('pop');
+                    void fileEmotionCircle.offsetWidth;
+                    fileEmotionCircle.classList.add('pop');
 
                     displayUploadStatus('Analysis complete.', 'success');
-                } else if (data.error) {
-                    throw new Error(data.error);
                 } else {
-                    throw new Error('Received unexpected response from server.');
+                    throw new Error(data.error || 'Received unexpected response from server.');
                 }
 
             } catch (error) {
                 console.error('Error analyzing file:', error);
-                // --- UPDATED: Show error emoji ---
+                // --- UPDATED: Show error emoji and border ---
                 fileResultText.textContent = 'Analysis Failed';
-                fileEmojiDisplay.textContent = '❌'; // <-- SET ERROR EMOJI
+                fileEmojiIcon.textContent = '❌'; // Set error emoji
+                fileEmotionCircle.style.borderColor = 'var(--error-color)'; // Set error border
                 displayUploadStatus(`Error: ${error.message}`, 'error');
             } finally {
                 setUploadLoadingState(false);
-                // Only re-enable start button if not currently detecting (shouldn't be, but safe check)
                 if (!isDetecting) {
                    startButton.disabled = false;
                 }
-                 fileInput.value = ''; // Clear the file input after processing
+                 // Don't clear fileInput.value here, let the 'change' event handle resets
             }
         }
 
@@ -534,12 +551,17 @@
         }
 
         // --- Initial state ---
-        // Ensure only the default section is shown on load
-        showSection('realtime-section');
-        displayRealtimeStatus('Press Start to Begin', 'info'); // Initial message for realtime
-        displayUploadStatus(''); // Clear upload status
-        realtimeEmojiDisplay.textContent = ''; // NEW
-        fileEmojiDisplay.textContent = ''; // NEW
+        function initApp() {
+            showSection('realtime-section');
+            displayRealtimeStatus('Press Start to Begin', 'info');
+            displayUploadStatus(''); 
+            realtimeEmojiIcon.textContent = '';
+            fileEmojiIcon.textContent = '';
+            realtimeEmotionCircle.style.borderColor = 'var(--border-color)';
+            fileEmotionCircle.style.borderColor = 'var(--border-color)';
+        }
+
+        initApp(); // Run on load
 
     </script>
 </body>
